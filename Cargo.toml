@@ -1,0 +1,11 @@
+[package]
+name = "fluyendo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+csscolorparser = "0.7.0"
+iced = { version = "0.13.1", features = ["canvas", "wgpu", "advanced", "tokio"], default-features = false }
+iced_runtime = "0.13.1"
+serde = { version = "1.0.217", features = ["derive"] }
+toml = { version = "0.8.19", default-features = false, features = ["parse"] }
