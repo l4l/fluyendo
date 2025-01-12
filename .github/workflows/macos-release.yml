@@ -1,0 +1,29 @@
+name: MacOS Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: [macos-13, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        components: rustfmt, clippy
+    - name: Build
+      run: |
+        cargo build --release
+    - name: Upload binary
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/fluyendo
+        asset_name: fluyendo-${{ matrix.os }}
+        tag: ${{ github.ref }}
