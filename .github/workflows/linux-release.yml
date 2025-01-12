@@ -1,4 +1,4 @@
-name: Linux Release ${{ matrix.name_kind }}
+name: Linux Release
 
 on:
   push:
@@ -19,10 +19,8 @@ jobs:
         include:
         - target: x86_64-unknown-linux-gnu
           bin_name: fluyendo-ubuntu-glibc
-          name_kind: glibc
         - target: x86_64-unknown-linux-musl
           bin_name: fluyendo-ubuntu-musl
-          name_kind: musl
 
     steps:
     - uses: actions/checkout@v2
