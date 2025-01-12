@@ -36,7 +36,6 @@ jobs:
         sudo apt-get install -y musl-tools
     - uses: dtolnay/rust-toolchain@v1
       with:
-        components: rustfmt, clippy
         target: ${{ matrix.target }}
         toolchain: 1.83.0
     - uses: Swatinem/rust-cache@v2
