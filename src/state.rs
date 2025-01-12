@@ -32,6 +32,10 @@ impl State {
         self.elapsed += delta;
     }
 
+    pub fn is_completed(&self) -> bool {
+        self.completed_ratio() == 1.0
+    }
+
     pub fn completed_ratio(&self) -> f32 {
         match self.kind {
             StateKind::Begin => 0.0,

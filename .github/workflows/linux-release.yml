@@ -26,7 +26,7 @@ jobs:
     - name: Install sysdeps
       run: |
         sudo apt-get update
-        sudo apt-get -y install libxkbcommon-dev
+        sudo apt-get -y install libxkbcommon-dev libasound2-dev
     - name: Install musl-tools
       if: contains(${{ matrix.target }}, 'musl')
       run: |

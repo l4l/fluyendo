@@ -1,9 +1,11 @@
 use std::time::Duration;
 
+use audio::Controller;
 use iced::Element;
 use iced::Length;
 use iced::Subscription;
 
+mod audio;
 mod colors;
 mod ring;
 mod state;
@@ -12,10 +14,11 @@ use colors::{Color, ColorConfig, StateColorConfig};
 use ring::RingSemiPending;
 use state::{PauseKind, State, StateKind};
 
-#[derive(Default)]
 struct App {
     pub state: State,
     pub color_config: ColorConfig,
+
+    pub audio: Controller,
 }
 
 pub enum ButtonKind {
@@ -26,12 +29,12 @@ pub enum ButtonKind {
 
 #[derive(Debug, Clone)]
 pub enum Event {
-    UpdateManual,
     TimerTick(Duration),
     Reload,
     Start,
     Stop,
     Pause,
+    CancelAudio,
 }
 
 impl App {
@@ -40,7 +43,9 @@ impl App {
     }
 
     fn subscription(&self) -> Subscription<Event> {
-        let ticks = if matches!(self.state.kind(), StateKind::Begin | StateKind::Pause(_)) {
+        let ticks = if matches!(self.state.kind(), StateKind::Begin | StateKind::Pause(_))
+            || self.state.is_completed()
+        {
             Subscription::none()
         } else {
             let duration = Duration::from_millis(100);
@@ -49,6 +54,9 @@ impl App {
 
         let reloader = iced::keyboard::on_key_press(|k, _mod| match k {
             iced::keyboard::Key::Character(c) if c == "z" || c == "Z" => Some(Event::Reload),
+            iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape) => {
+                Some(Event::CancelAudio)
+            }
             _ => None,
         });
 
@@ -57,7 +65,6 @@ impl App {
 
     fn update(&mut self, ev: Event) {
         match ev {
-            Event::UpdateManual => self.state.add_elapsed(Duration::from_millis(150)),
             Event::Reload => match std::fs::read_to_string("./color_config.toml") {
                 Ok(content) => match toml::from_str::<ColorConfig>(&content) {
                     Ok(config) => {
@@ -65,19 +72,33 @@ impl App {
                         println!("reloaded");
                     }
                     Err(err) => {
-                        println!("parse failed: {:?}", err);
+                        eprintln!("parse failed: {:?}", err);
                     }
                 },
                 Err(err) => {
-                    println!("i/o failed: {:?}", err);
+                    eprintln!("i/o failed: {:?}", err);
                 }
             },
-            Event::TimerTick(at) => self
-                .state
-                .add_elapsed(Duration::from_secs_f32(at.as_secs_f32())),
-            Event::Start => self.state.start(),
-            Event::Stop => self.state.stop(),
-            Event::Pause => self.state.pause(),
+            Event::TimerTick(at) => {
+                self.state
+                    .add_elapsed(Duration::from_secs_f32(at.as_secs_f32()));
+                if self.state.is_completed() {
+                    self.audio.start();
+                }
+            }
+            Event::Start => {
+                self.audio.stop();
+                self.state.start()
+            }
+            Event::Stop => {
+                self.audio.stop();
+                self.state.stop()
+            }
+            Event::Pause => {
+                self.audio.stop();
+                self.state.pause()
+            }
+            Event::CancelAudio => self.audio.stop(),
         }
     }
 
@@ -202,5 +223,14 @@ fn main() -> iced::Result {
         .window_size((400., 600.))
         .subscription(App::subscription)
         .antialiasing(true)
-        .run()
+        .run_with(|| {
+            (
+                App {
+                    state: Default::default(),
+                    color_config: Default::default(),
+                    audio: audio::start_audio_thread(),
+                },
+                iced::Task::none(),
+            )
+        })
 }
