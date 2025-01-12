@@ -20,7 +20,8 @@ jobs:
         toolchain: 1.83.0
     - name: Build
       run: |
-        cargo build --release
+        cargo build --verbose --release
+        ls target
     - name: Upload binary
       uses: svenstaro/upload-release-action@v2
       with:
