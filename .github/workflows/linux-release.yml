@@ -28,7 +28,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get -y install libxkbcommon-dev
-    - name: Install musl-tools on Linux if target includes "musl"
+    - name: Install musl-tools
       if: contains(${{ matrix.target }}, 'musl')
       run: |
         if dpkg -l musl-tools | grep -q "^ii\s*musl-tools"; then
@@ -38,6 +38,8 @@ jobs:
     - uses: dtolnay/rust-toolchain@v1
       with:
         components: rustfmt, clippy
+        target: ${{ matrix.target }}
+        toolchain: 1.83.0
     - name: Build
       run: |
         cargo build --release --target-dir ${{ matrix.target }} --target ${{ matrix.target }}
