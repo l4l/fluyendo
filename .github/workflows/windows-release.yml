@@ -26,5 +26,5 @@ jobs:
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: target/release/fluyendo
-        asset_name: fluyendo-${{ matrix.os }}
+        asset_name: fluyendo.exe
         tag: ${{ github.ref }}

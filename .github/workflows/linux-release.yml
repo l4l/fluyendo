@@ -16,9 +16,9 @@ jobs:
       matrix:
         include:
         - target: x86_64-unknown-linux-gnu
-          bin_name: fluyendo-ubuntu-glibc
+          suffix: glibc
         - target: x86_64-unknown-linux-musl
-          bin_name: fluyendo-ubuntu-musl
+          suffix: musl
 
     steps:
     - uses: actions/checkout@v2
@@ -46,5 +46,5 @@ jobs:
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: ${{ matrix.target }}/release/fluyendo
-        asset_name: ${{ matrix.bin_name }}
+        asset_name: fluyendo-ubuntu-${{ matrix.suffix }}
         tag: ${{ github.ref }}

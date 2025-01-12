@@ -14,7 +14,11 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-13, macos-latest]
+        include:
+          - os: macos-latest
+            suffix: macos-latest-arm64
+          - os: macos-13
+            suffix: macos-13-x86_64
 
     steps:
     - uses: actions/checkout@v2
@@ -30,5 +34,5 @@ jobs:
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: target/release/fluyendo
-        asset_name: fluyendo-${{ matrix.os }}
+        asset_name: fluyendo-${{ matrix.suffix }}
         tag: ${{ github.ref }}
