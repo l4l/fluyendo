@@ -1,0 +1,27 @@
+name: Windows
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        components: rustfmt, clippy
+    - name: Lint
+      run: cargo clippy -- -D warnings
+    - name: Run tests
+      run: |
+        cargo test
+        cargo test --all-features
+
