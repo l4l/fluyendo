@@ -28,6 +28,13 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get -y install libxkbcommon-dev
+    - name: Install musl-tools on Linux if target includes "musl"
+      if: contains(${{ matrix.target }}, 'musl')
+      run: |
+        if dpkg -l musl-tools | grep -q "^ii\s*musl-tools"; then
+            exit 0
+        fi
+        sudo apt-get install -y musl-tools
     - uses: actions-rs/toolchain@v1
       with:
         components: rustfmt, clippy
