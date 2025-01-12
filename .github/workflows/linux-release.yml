@@ -1,4 +1,4 @@
-name: Linux Release
+name: Linux Release ${{ matrix.name_kind }}
 
 on:
   push:
@@ -12,15 +12,17 @@ env:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     strategy:
-      - matrix.os: ubuntu-latest
-        matrix.target: x86_64-unknown-linux-gnu
-        matrix.name: fluyendo-ubuntu-glibc
-      - matrix.os: ubuntu-latest
-        matrix.target: x86_64-unknown-linux-musl
-        matrix.name: fluyendo-ubuntu-musl
+      matrix:
+        include:
+        - target: x86_64-unknown-linux-gnu
+          bin_name: fluyendo-ubuntu-glibc
+          name_kind: glibc
+        - target: x86_64-unknown-linux-musl
+          bin_name: fluyendo-ubuntu-musl
+          name_kind: musl
 
     steps:
     - uses: actions/checkout@v2
@@ -39,5 +41,5 @@ jobs:
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: ${{ matrix.target }}/release/fluyendo
-        asset_name: ${{ matrix.name }}
+        asset_name: ${{ matrix.bin_name }}
         tag: ${{ github.ref }}
