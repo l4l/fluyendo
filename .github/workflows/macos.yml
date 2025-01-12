@@ -1,0 +1,32 @@
+name: MacOS
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-13, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: dtolnay/rust-toolchain@v1
+      with:
+        components: clippy
+        toolchain: 1.83.0
+    - uses: Swatinem/rust-cache@v2
+    - name: Lint
+      run: cargo clippy -- -D warnings
+    - name: Run tests
+      run: |
+        cargo test
+        cargo test --all-features
