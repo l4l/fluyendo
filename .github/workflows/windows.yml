@@ -19,6 +19,7 @@ jobs:
       with:
         components: rustfmt, clippy
         toolchain: 1.83.0
+    - uses: Swatinem/rust-cache@v2
     - name: Lint
       run: cargo clippy -- -D warnings
     - name: Run tests
