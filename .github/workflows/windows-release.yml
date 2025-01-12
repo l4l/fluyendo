@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - '*'
+  pull_request:
+    branches: [ master ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -22,6 +24,7 @@ jobs:
       run: |
         cargo build --verbose --release
         ls target
+        ls target\release
     - name: Upload binary
       uses: svenstaro/upload-release-action@v2
       with:
