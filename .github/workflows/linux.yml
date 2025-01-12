@@ -22,6 +22,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@v1
       with:
         components: rustfmt, clippy
+        toolchain: 1.83.0
     - name: Check format
       run: cargo fmt -- --check
     - name: Lint
