@@ -1,4 +1,6 @@
-use std::time::Duration;
+use iced::time::{Duration, Instant};
+
+use crate::config::Config;
 
 pub enum PauseKind {
     Work,
@@ -17,19 +19,67 @@ pub enum StateKind {
 pub struct State {
     pub kind: StateKind,
 
+    // We calculate elapsed manually because the timer might be skewed.
+    // Apparently it's better write more adequate Subscription instead.
+    pub prev_tick: Option<Instant>,
     pub elapsed: Duration,
+
+    pub saved_break_time: Duration,
+
     pub work_bound_duration: Duration,
     pub break_divisor: f32,
-    pub saved_break_time: Duration,
+    pub auto_break: bool,
+}
+
+impl StateKind {
+    pub fn needs_tick(&self) -> bool {
+        !matches!(self, Self::Begin | Self::Pause(_))
+    }
+
+    pub fn is_paused(&self) -> bool {
+        matches!(self, Self::Pause(_))
+    }
 }
 
 impl State {
+    pub fn from_config(config: &Config) -> Self {
+        let mut this = Self {
+            kind: StateKind::default(),
+            prev_tick: None,
+            elapsed: Duration::from_secs(0),
+            saved_break_time: Duration::default(),
+            work_bound_duration: Duration::default(),
+            break_divisor: 5.0,
+            auto_break: false,
+        };
+
+        this.update_config(config);
+        this
+    }
+
+    pub fn update_config(&mut self, config: &Config) {
+        let Config {
+            work_expected_duration,
+            break_divisor,
+            auto_break,
+            ..
+        } = config;
+
+        self.work_bound_duration = *work_expected_duration;
+        self.break_divisor = *break_divisor;
+        self.auto_break = *auto_break;
+    }
+
     pub fn kind(&self) -> &StateKind {
         &self.kind
     }
 
-    pub fn add_elapsed(&mut self, delta: Duration) {
-        self.elapsed += delta;
+    pub fn on_tick_at(&mut self, tick_at: Instant) {
+        let Some(prev_tick) = self.prev_tick else {
+            return;
+        };
+        self.elapsed += tick_at.duration_since(prev_tick);
+        self.prev_tick = Some(tick_at);
     }
 
     pub fn is_completed(&self) -> bool {
@@ -50,6 +100,7 @@ impl State {
     }
 
     pub fn start(&mut self) {
+        self.prev_tick = Some(Instant::now());
         self.kind = match self.kind {
             StateKind::Begin | StateKind::Pause(PauseKind::Work) => StateKind::Work,
             StateKind::Pause(PauseKind::Break) => StateKind::Break,
@@ -58,13 +109,19 @@ impl State {
     }
 
     pub fn stop(&mut self) {
+        self.prev_tick = None;
         self.kind = match self.kind {
             StateKind::Begin => return,
             StateKind::Pause(PauseKind::Work) | StateKind::Work => {
-                self.saved_break_time += Duration::from_secs_f32(
-                    std::mem::take(&mut self.elapsed).as_secs_f32() / self.break_divisor,
-                );
-                StateKind::Pause(PauseKind::Break)
+                let elapsed = std::mem::take(&mut self.elapsed);
+                self.saved_break_time +=
+                    Duration::from_secs_f32(elapsed.as_secs_f32() / self.break_divisor);
+                if self.auto_break {
+                    self.prev_tick = Some(Instant::now());
+                    StateKind::Break
+                } else {
+                    StateKind::Pause(PauseKind::Break)
+                }
             }
             StateKind::Pause(PauseKind::Break) | StateKind::Break => {
                 self.saved_break_time = self
@@ -77,6 +134,7 @@ impl State {
     }
 
     pub fn pause(&mut self) {
+        self.prev_tick = None;
         self.kind = match self.kind {
             StateKind::Begin
             | StateKind::Pause(PauseKind::Work)
@@ -112,18 +170,6 @@ impl State {
         let limit = duration_to_str(limit);
 
         format!("{elapsed}    / {limit}")
-    }
-}
-
-impl Default for State {
-    fn default() -> Self {
-        Self {
-            kind: StateKind::default(),
-            elapsed: Duration::default(),
-            work_bound_duration: Duration::from_secs(25),
-            break_divisor: 5.0,
-            saved_break_time: Duration::default(),
-        }
     }
 }
 

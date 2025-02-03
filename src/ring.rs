@@ -1,7 +1,7 @@
 use iced::widget::canvas;
 use iced::Renderer;
 
-use super::Color;
+use crate::color::Color;
 
 pub struct RingSemiPending {
     pub ratio: f32,
