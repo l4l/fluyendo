@@ -273,6 +273,11 @@ fn init_config() -> Result<(Config, String)> {
 }
 
 fn main() -> Result<()> {
+    // See https://github.com/iced-rs/iced/issues/1810
+    if std::env::var("WAYLAND_DISPLAY").is_ok() {
+        std::env::set_var("ICED_PRESENT_MODE", "mailbox");
+    }
+
     let (config, config_path) = init_config()?;
 
     let audio_path = config.audio_file_path.clone();
