@@ -80,6 +80,6 @@ impl TryFrom<String> for Color {
 impl From<Color> for iced::Color {
     fn from(value: Color) -> Self {
         let Color { r, g, b, a } = value;
-        iced::Color::new(r, g, b, a)
+        iced::Color::from_rgba(r, g, b, a)
     }
 }

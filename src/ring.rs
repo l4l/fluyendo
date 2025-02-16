@@ -58,7 +58,7 @@ impl<E> canvas::Program<E> for RingSemiPending {
         &self,
         _state: &Self::State,
         renderer: &Renderer,
-        _theme: &iced_runtime::core::Theme,
+        _theme: &iced::Theme,
         bounds: iced::Rectangle,
         _cursor: iced::mouse::Cursor,
     ) -> Vec<canvas::Geometry<Renderer>> {

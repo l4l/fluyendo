@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::Result;
 use iced::time::Duration;
@@ -14,7 +14,7 @@ pub struct Config {
     pub break_divisor: f32,
     pub auto_break: bool,
 
-    pub audio_file_path: Option<PathBuf>,
+    pub audio_param: crate::audio::Param,
     pub mute: bool,
 
     pub color_config: ColorConfig,
@@ -36,7 +36,7 @@ impl Default for Config {
             work_expected_duration: Duration::from_secs(25 * 60),
             break_divisor: 5.0,
             auto_break: true,
-            audio_file_path: None,
+            audio_param: Default::default(),
             mute: false,
             color_config: ColorConfig::default(),
         }
