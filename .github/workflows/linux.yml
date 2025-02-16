@@ -13,6 +13,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        include:
+        - target: x86_64-unknown-linux-gnu
+        - target: wasm32-unknown-unknown
+
     steps:
     - uses: actions/checkout@v2
     - name: Install sysdeps
@@ -22,16 +28,19 @@ jobs:
     - uses: dtolnay/rust-toolchain@v1
       with:
         components: rustfmt, clippy
+        target: ${{ matrix.target }}
         toolchain: 1.83.0
     - uses: Swatinem/rust-cache@v2
     - name: Check format
+      if: contains(${{ matrix.target }}, 'linux-gnu')
       run: cargo fmt -- --check
     - name: Lint
-      run: cargo clippy -- -D warnings
+      run: cargo clippy --target ${{ matrix.target }} -- -D warnings
     - name: Run tests
+      if: contains(${{ matrix.target }}, 'linux-gnu')
       run: |
         cargo test
         cargo test --all-features
     - name: Build
       run: |
-        cargo build
+        cargo build --target ${{ matrix.target }}
