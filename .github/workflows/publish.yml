@@ -1,0 +1,55 @@
+name: Pages deploy
+
+on:
+  push:
+    branches: ["pages-deploy"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          target: wasm32-unknown-unknown
+          toolchain: 1.83.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Trunk
+        run: |
+          if ! command -v trunk &> /dev/null; then
+            cargo install trunk wasm-bindgen-cli wasm-opt
+          fi
+      - name: Build
+        env:
+          URL_PATH: "fluyendo"
+        run: trunk build --release -M --public-url /fluyendo/
+      - name: Verify dist directory contents
+        run: |
+          echo "Verifying dist directory:"
+          ls -R dist
+          echo "Checking specific expected files:"
+          [ -f dist/index.html ] && echo "Found index.html" || echo "index.html missing"
+          [ -f dist/fluyendo.wasm ] && echo "Found fluyendo.wasm" || echo "fluyendo.wasm missing"
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static files as artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+
