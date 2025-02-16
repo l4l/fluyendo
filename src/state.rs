@@ -1,6 +1,7 @@
-use iced::time::{Duration, Instant};
+use iced::time::Duration;
 
 use crate::config::Config;
+use crate::Instant;
 
 pub enum PauseKind {
     Work,

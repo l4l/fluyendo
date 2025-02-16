@@ -1,11 +1,14 @@
 use anyhow::Result;
 
-use audio::Controller;
 use config::Config;
-use iced::time::Instant;
 use iced::Element;
 use iced::Length;
 use iced::Subscription;
+
+#[cfg(not(target_arch = "wasm32"))]
+use iced::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::std::Instant;
 
 mod audio;
 mod color;
@@ -25,7 +28,7 @@ struct App {
     pub config_path: String,
 
     pub audio_started_once: bool,
-    pub audio: Controller,
+    pub audio: audio::Controller,
 }
 
 pub enum ButtonKind {
@@ -69,7 +72,7 @@ impl App {
 
     fn update_config(&mut self, new_config: Config) {
         let Config {
-            audio_file_path,
+            audio_param: audio_file_path,
             mute,
 
             color_config: _,
@@ -77,12 +80,11 @@ impl App {
             break_divisor: _,
             auto_break: _,
         } = std::mem::replace(&mut self.config, new_config);
-        let is_audio_changed = audio_file_path != self.config.audio_file_path;
+        let is_audio_changed = audio_file_path != self.config.audio_param;
         let is_mute_changed = mute != self.config.mute;
 
         if is_audio_changed {
-            self.audio
-                .change_source(self.config.audio_file_path.clone());
+            self.audio.update(self.config.audio_param.clone());
         }
         if is_mute_changed {
             if self.config.mute {
@@ -251,6 +253,7 @@ impl ButtonKind {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn init_config() -> Result<(Config, String)> {
     let mut args = std::env::args().skip(1);
     let (config, config_path) = match (args.next().as_deref(), args.next().as_deref()) {
@@ -272,7 +275,13 @@ fn init_config() -> Result<(Config, String)> {
     Ok((config, config_path))
 }
 
+#[cfg(target_arch = "wasm32")]
+fn init_config() -> Result<(Config, String)> {
+    Ok((Config::default(), DEFAULT_CONFIG_PATH.to_string()))
+}
+
 fn main() -> Result<()> {
+    #[cfg(not(target_arch = "wasm32"))]
     // See https://github.com/iced-rs/iced/issues/1810
     if std::env::var("WAYLAND_DISPLAY").is_ok() {
         std::env::set_var("ICED_PRESENT_MODE", "mailbox");
@@ -280,29 +289,34 @@ fn main() -> Result<()> {
 
     let (config, config_path) = init_config()?;
 
-    let audio_path = config.audio_file_path.clone();
-    let audio = audio::start_audio_thread(audio_path);
+    let audio_path = config.audio_param.clone();
+    let audio = audio::Controller::new(audio_path);
     if config.mute {
         audio.mute();
     } else {
         audio.unmute();
     }
 
-    iced::application("fluyendo", App::update, App::view)
+    let app = iced::application("fluyendo", App::update, App::view)
         .window_size((400., 600.))
-        .subscription(App::subscription)
-        .antialiasing(true)
-        .run_with(|| {
-            (
-                App {
-                    state: State::from_config(&config),
-                    config,
-                    config_path,
-                    audio_started_once: false,
-                    audio,
-                },
-                iced::Task::none(),
-            )
-        })
-        .map_err(Into::into)
+        .subscription(App::subscription);
+    // See https://github.com/iced-rs/iced/issues/1241
+    let app = if cfg!(target_arch = "wasm32") {
+        app
+    } else {
+        app.antialiasing(true)
+    };
+    app.run_with(|| {
+        (
+            App {
+                state: State::from_config(&config),
+                config,
+                config_path,
+                audio_started_once: false,
+                audio,
+            },
+            iced::Task::none(),
+        )
+    })
+    .map_err(Into::into)
 }
