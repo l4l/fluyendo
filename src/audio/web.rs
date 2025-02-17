@@ -17,7 +17,7 @@ impl Controller {
 
     pub fn stop(&mut self) {
         self.0.pause().unwrap();
-        self.0.fast_seek(0.).unwrap();
+        self.0.set_current_time(0.);
     }
 
     pub fn update(&self, _: Param) {}
