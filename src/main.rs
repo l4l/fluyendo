@@ -59,11 +59,15 @@ impl App {
             Subscription::none()
         };
 
-        let reloader = iced::keyboard::on_key_press(|k, _mod| match k {
-            iced::keyboard::Key::Character(c) if c == "z" || c == "Z" => Some(Event::Reload),
-            iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape) => {
-                Some(Event::CancelAudio)
-            }
+        let reloader = iced::event::listen_with(|event, _status, _window| match event {
+            iced::Event::Keyboard(iced::keyboard::Event::KeyPressed {
+                key: iced::keyboard::Key::Character(c),
+                ..
+            }) if c == "z" || c == "Z" => Some(Event::Reload),
+            iced::Event::Keyboard(iced::keyboard::Event::KeyPressed {
+                key: iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape),
+                ..
+            }) => Some(Event::CancelAudio),
             _ => None,
         });
 
@@ -165,6 +169,7 @@ impl App {
                 offset: [0., 0.].into(),
                 blur_radius: 3.,
             },
+            snap: true,
         }
     }
 
@@ -175,7 +180,7 @@ impl App {
 
         let mut controls = widget::Row::with_capacity(ButtonKind::all().size_hint().0 * 2);
         {
-            controls = controls.push(widget::vertical_space().width(Length::FillPortion(4)));
+            controls = controls.push(widget::Space::new().width(Length::FillPortion(4)));
 
             for button in ButtonKind::all() {
                 let Some(text) = button.text(self.state.kind()) else {
@@ -187,25 +192,25 @@ impl App {
                         .style(self.button_style())
                         .height(Length::FillPortion(3)),
                 );
-                controls = controls.push(widget::vertical_space().width(Length::FillPortion(1)));
+                controls = controls.push(widget::Space::new().width(Length::FillPortion(1)));
             }
 
-            controls = controls.push(widget::vertical_space().width(Length::FillPortion(3)));
+            controls = controls.push(widget::Space::new().width(Length::FillPortion(3)));
         }
         let columns = widget::column![
-            widget::horizontal_space().height(Length::FillPortion(1)),
+            widget::Space::new().height(Length::FillPortion(1)),
             widget::text(self.state.name())
                 .color(self.color_config().title_text)
                 .height(Length::FillPortion(2))
                 .size(24),
             widget::canvas(ring).height(Length::FillPortion(4)),
             controls,
-            widget::horizontal_space().height(Length::FillPortion(1)),
+            widget::Space::new().height(Length::FillPortion(1)),
             widget::text(self.state.time())
                 .color(self.color_config().timer_text)
                 .size(16)
                 .height(Length::FillPortion(1)),
-            widget::horizontal_space().height(Length::FillPortion(2)),
+            widget::Space::new().height(Length::FillPortion(2)),
         ]
         .align_x(iced::Alignment::Center);
 
@@ -284,7 +289,8 @@ fn main() -> Result<()> {
     #[cfg(not(target_arch = "wasm32"))]
     // See https://github.com/iced-rs/iced/issues/1810
     if std::env::var("WAYLAND_DISPLAY").is_ok() {
-        std::env::set_var("ICED_PRESENT_MODE", "mailbox");
+        // SAFETY: Called at the very start of main, before any other threads are spawned.
+        unsafe { std::env::set_var("ICED_PRESENT_MODE", "mailbox") };
     }
 
     let (config, config_path) = init_config()?;
@@ -297,26 +303,26 @@ fn main() -> Result<()> {
         audio.unmute();
     }
 
-    let app = iced::application("fluyendo", App::update, App::view)
-        .window_size((400., 600.))
-        .subscription(App::subscription);
+    let initial_state = std::cell::Cell::new(Some(App {
+        state: State::from_config(&config),
+        config,
+        config_path,
+        audio_started_once: false,
+        audio,
+    }));
+    let app = iced::application(
+        move || initial_state.take().expect("boot called once"),
+        App::update,
+        App::view,
+    )
+    .title("fluyendo")
+    .window_size((400., 600.))
+    .subscription(App::subscription);
     // See https://github.com/iced-rs/iced/issues/1241
     let app = if cfg!(target_arch = "wasm32") {
         app
     } else {
         app.antialiasing(true)
     };
-    app.run_with(|| {
-        (
-            App {
-                state: State::from_config(&config),
-                config,
-                config_path,
-                audio_started_once: false,
-                audio,
-            },
-            iced::Task::none(),
-        )
-    })
-    .map_err(Into::into)
+    app.run().map_err(Into::into)
 }

@@ -26,7 +26,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@v1
         with:
           target: wasm32-unknown-unknown
-          toolchain: 1.83.0
+          toolchain: 1.88.0
       - uses: Swatinem/rust-cache@v2
       - name: Install Trunk
         run: |
