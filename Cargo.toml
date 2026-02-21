@@ -4,17 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.95"
+anyhow = "1.0.102"
 csscolorparser = "0.7.0"
 humantime-serde = "1.1.1"
-serde = { version = "1.0.217", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
 toml = { version = "0.8.19", default-features = false, features = ["parse"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-iced = { git = "https://github.com/l4l/iced.git", branch = "forked-wasmtimer", features = ["canvas", "wgpu", "advanced", "tokio"], default-features = false }
+iced = { version = "0.14.0", features = ["canvas", "wgpu", "advanced", "tokio", "x11", "wayland"], default-features = false }
 raplay = { version = "0.3.5", default-features = false }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-iced = { git = "https://github.com/l4l/iced.git", branch = "forked-wasmtimer", features = ["canvas", "advanced", "webgl", "wgpu", "fira-sans"], default-features = false }
-web-sys = { version = "0.3.69", features = ["HtmlAudioElement"]  }
+iced = { version = "0.14.0", features = ["canvas", "advanced", "webgl", "wgpu", "fira-sans"], default-features = false }
+web-sys = { version = "0.3.69", features = ["HtmlAudioElement"] }
 wasmtimer = "0.4.1"

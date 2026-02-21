@@ -25,7 +25,7 @@ impl Controller {
 
     fn send(&self, cmd: Command) {
         if let Err(err) = self.0.try_send(cmd) {
-            eprintln!("failed to send cmd to audio thread: {:?}", err);
+            eprintln!("failed to send cmd to audio thread: {err:?}");
         }
     }
 
@@ -78,7 +78,7 @@ fn start_audio_thread(audio_path: Option<PathBuf>) -> Controller {
     std::thread::spawn(move || {
         let handle_res = |res| {
             if let Err(err) = res {
-                eprintln!("audio error: {:?}", err);
+                eprintln!("audio error: {err:?}");
             }
         };
 
