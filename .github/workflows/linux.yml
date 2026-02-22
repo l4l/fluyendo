@@ -17,14 +17,21 @@ jobs:
       matrix:
         include:
         - target: x86_64-unknown-linux-gnu
+        - target: x86_64-unknown-linux-musl
         - target: wasm32-unknown-unknown
 
     steps:
     - uses: actions/checkout@v4
     - name: Install sysdeps
+      if: "!contains(matrix.target, 'musl') && !contains(matrix.target, 'wasm')"
       run: |
         sudo apt-get update
         sudo apt-get -y install libxkbcommon-dev libasound2-dev
+    - name: Install musl-tools
+      if: contains(matrix.target, 'musl')
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y musl-tools
     - uses: dtolnay/rust-toolchain@v1
       with:
         components: rustfmt, clippy
@@ -32,12 +39,12 @@ jobs:
         toolchain: 1.88.0
     - uses: Swatinem/rust-cache@v2
     - name: Check format
-      if: contains(${{ matrix.target }}, 'linux-gnu')
+      if: contains(matrix.target, 'linux-gnu')
       run: cargo fmt -- --check
     - name: Lint
       run: cargo clippy --target ${{ matrix.target }} -- -D warnings
     - name: Run tests
-      if: contains(${{ matrix.target }}, 'linux-gnu')
+      if: contains(matrix.target, 'linux-gnu')
       run: |
         cargo test
         cargo test --all-features
