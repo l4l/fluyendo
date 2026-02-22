@@ -16,23 +16,26 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            suffix: macos-latest-arm64
-          - os: macos-13
-            suffix: macos-13-x86_64
+            target: aarch64-apple-darwin
+            suffix: macos-arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            suffix: macos-x86_64
 
     steps:
     - uses: actions/checkout@v2
     - uses: dtolnay/rust-toolchain@v1
       with:
+        target: ${{ matrix.target }}
         toolchain: 1.88.0
     - uses: Swatinem/rust-cache@v2
     - name: Build
       run: |
-        cargo build --release
+        cargo build --release --target ${{ matrix.target }}
     - name: Upload binary
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: target/release/fluyendo
+        file: target/${{ matrix.target }}/release/fluyendo
         asset_name: fluyendo-${{ matrix.suffix }}
         tag: ${{ github.ref }}
